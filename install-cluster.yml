@@ -1,0 +1,25 @@
+---
+- name: Setup Bastion Host
+  hosts: localhost
+  roles:
+     - setup-bastion
+
+- name: Host Preparation
+  hosts: nodes
+  roles:
+     - host-preparation
+
+- name: Run OpenShift PreRequisite playbook
+  hosts: localhost
+  roles:
+     - prerequisite
+
+- name: Run OpenShift Deploy Cluster playbook
+  hosts: localhost
+  roles:
+     - deploy-cluster
+
+- name: Post Installation
+  hosts: masters[0]
+  roles:
+     - post-install
