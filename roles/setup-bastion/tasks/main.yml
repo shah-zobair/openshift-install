@@ -1,0 +1,23 @@
+---
+# tasks file for setting up bastion host
+
+
+- name: Verify it can get OpenShift packages
+  shell: "repoquery --plugins --quiet openshift-ansible*"
+  register: output
+- debug: var=output.stdout_lines
+
+- name: Fail if openshift package is not found
+  fail:
+  when: "'openshift' not in output.stdout"
+
+- name: Install required packages
+  yum:
+    name: "{{ packages }}"
+    state: latest
+  vars:
+    packages:
+    - openshift-ansible
+    - git
+    - tmux
+
