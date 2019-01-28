@@ -62,15 +62,36 @@
       fail:
       when: ansible_fqdn != dnslookup_fqdn.stdout
 
-- name: Check /var/lib/openshift partition
+- name: Check /var/lib/origin partition exists
+  command: mountpoint -q {{volume_var_lib_origin}}
+  register: volume_stat
+  failed_when: False
+  changed_when: False
 
+- name: Fail if /var/log/origin is not mounted
+  fail:
+  when: volume_stat.rc != 0
 
 - name: Check /var/log size for 20GB or more
+  command: mountpoint -q {{volume_var_log}}
+  register: volume_stat
+  failed_when: False
+  changed_when: False
 
+- name: Fail if /var/log is not mounted
+  fail:
+  when: volume_stat.rc != 0
+
+- name: 'Ensure that total space on {{ volume_var_log }} is grater than 20GB'
+  assert:
+    that: item.size_total >= 6 * 1024 * 1024 * 1024
+    msg: 'disk space has reached 70% thresold'
+  when: item.mount == volume_var_log
+  with_items: '{{ ansible_mounts }}'
 
 - name: Host preparation
   block:
-    - name: Set SELinux to targeted if required
+    - name: Set SELinux to Enforcing if not set already
       selinux:
         policy: targeted
         state: enforcing
