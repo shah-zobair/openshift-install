@@ -38,9 +38,60 @@
       when: ansible_lvm["pvs"][docker_device] is defined
 
 
+- name: Check FQDN and DNS forward/reverse resolve
+  block:
+    - name: Fail if FQDN is not configured
+      fail:
+      when: ansible_hostname == ansible_fqdn
+
+    - name: Do dns lookup for fqdn
+      shell: "nslookup {{ ansible_fqdn }} | grep -v 53 | grep Address: | awk {'print $2'}"
+      register: dnslookup_ip
+      changed_when: false
+
+    - name: Fail if host IP and dns lookup IP are not the same
+      fail:
+      when: ansible_default_ipv4.address != dnslookup_ip.stdout
+
+    - name: Do dns reverse lookup for local IP
+      shell: "nslookup {{ ansible_default_ipv4.address }} | grep name | awk {' print $4'} | sed s/.$//g"
+      register: dnslookup_fqdn
+      changed_when: false
+
+    - name: Fail if hostname and dns reverse lookup name are not the same
+      fail:
+      when: ansible_fqdn != dnslookup_fqdn.stdout
+
+- name: Check /var/lib/etcd partition exists
+  command: mountpoint -q {{volume_var_lib_etcd}}
+  register: volume_stat
+  failed_when: False
+  changed_when: False
+
+- name: Fail if /var/log/etcd is not mounted
+  fail:
+  when: volume_stat.rc != 0
+
+- name: Check /var/log size for 20GB or more
+  command: mountpoint -q {{volume_var_log}}
+  register: volume_stat
+  failed_when: False
+  changed_when: False
+
+- name: Fail if /var/log is not mounted
+  fail:
+  when: volume_stat.rc != 0
+
+- name: 'Ensure that total space on {{ volume_var_log }} is grater than 20GB'
+  assert:
+    that: item.size_total >= 6 * 1024 * 1024 * 1024
+    msg: 'disk space has reached 70% thresold'
+  when: item.mount == volume_var_log
+  with_items: '{{ ansible_mounts }}'
+
 - name: Host preparation
   block:
-    - name: Set SELinux to targeted if required
+    - name: Set SELinux to Enforcing if not set already
       selinux:
         policy: targeted
         state: enforcing
@@ -66,3 +117,8 @@
       command: /usr/bin/update-ca-trust extract
 
 
+- name: Mark that this playbook ran
+  copy:
+    dest: "/root/master-preparation.stat"
+    content: |
+      1

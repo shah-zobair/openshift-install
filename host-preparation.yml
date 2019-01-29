@@ -1,0 +1,12 @@
+---
+
+- name: Host Preparation
+  hosts: nodes:!masters
+  vars:
+    volume_var_lib_origin: /var/lib/origin
+    volume_var_log: /var/log
+    docker_disk: sdc
+    docker_device: /dev/{{ disk }}
+  roles:
+     - host-preparation
+

@@ -117,3 +117,8 @@
       command: /usr/bin/update-ca-trust extract
 
 
+- name: Mark that this playbook ran
+  copy:
+    dest: "/root/host-preparation.stat"
+    content: |
+      1

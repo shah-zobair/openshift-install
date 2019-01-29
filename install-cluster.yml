@@ -4,14 +4,13 @@
   roles:
      - setup-bastion
 
-- name: Host Preparation
-  hosts: nodes
-  vars_files:
-    - './variables.yml'
-  roles:
-     - host-preparation
+- import_playbook: host-preparation.yml
 
-- import_playbook: /usr/share/ansible/openshift-ansible/playbooks/prerequisites.yml
+- import_playbook: master-preparation.yml
+
+- name: Run OpenShift Pre Requisite playbook
+  import_playbook: /usr/share/ansible/openshift-ansible/playbooks/prerequisites.yml
+  when: {{ run-prerequisite }} == "true"
 
 - import_playbook: /usr/share/ansible/openshift-ansible/playbooks/deploy_cluster.yml
 

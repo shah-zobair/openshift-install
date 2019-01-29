@@ -1,0 +1,7 @@
+---
+
+- name: Master Preparation
+  hosts: masters
+  roles:
+     - host-preparation
+
