@@ -1,0 +1,12 @@
+
+
+# Define Disk for docker. DO NOT add "/dev/"
+docker_disk: sdc
+docker_device: /dev/{{ disk }}
+
+# Location of the Artifactory Certificate on Jump Server
+artifactory_cert_path: ../cert/artifactory.....cert
+
+
+volume_var_lib_origin: /var/lib/origin
+volume_var_log: /var/log

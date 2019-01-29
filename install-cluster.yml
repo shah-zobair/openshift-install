@@ -6,18 +6,14 @@
 
 - name: Host Preparation
   hosts: nodes
+  vars_files:
+    - './variables.yml'
   roles:
      - host-preparation
 
-- name: Run OpenShift PreRequisite playbook
-  hosts: localhost
-  roles:
-     - prerequisite
+- import_playbook: /usr/share/ansible/openshift-ansible/playbooks/prerequisites.yml
 
-- name: Run OpenShift Deploy Cluster playbook
-  hosts: localhost
-  roles:
-     - deploy-cluster
+- import_playbook: /usr/share/ansible/openshift-ansible/playbooks/deploy_cluster.yml
 
 - name: Post Installation
   hosts: masters[0]
