@@ -84,7 +84,7 @@
 
 - name: 'Ensure that total space on {{ volume_var_log }} is grater than 20GB'
   assert:
-    that: item.size_total >= 6 * 1024 * 1024 * 1024
+    that: item.size_total >= 20 * 1024 * 1024 * 1024
     msg: 'disk space has reached 70% thresold'
   when: item.mount == volume_var_log
   with_items: '{{ ansible_mounts }}'
