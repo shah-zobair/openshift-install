@@ -2,19 +2,27 @@
 - name: Setup Bastion Host
   hosts: localhost
   roles:
-     - setup-bastion
+    - setup-bastion
+
 
 - import_playbook: host-preparation.yml
+  when: bmo_run_prerequisite
 
 - import_playbook: master-preparation.yml
+  when: bmo_run_prerequisite
 
 - name: Run OpenShift Pre Requisite playbook
   import_playbook: /usr/share/ansible/openshift-ansible/playbooks/prerequisites.yml
-  when: {{ run-prerequisite }} == "true"
+  when: bmo_run_prerequisite
 
 - import_playbook: /usr/share/ansible/openshift-ansible/playbooks/deploy_cluster.yml
+
+- name: Run OpenShift Applier for Post Install tasks
+  hosts: seed-hosts[0]
+  roles:
+    - openshift-applier
 
 #- name: Post Installation
 #  hosts: masters[0]
 #  roles:
-#     - post-install
+#    - post-install

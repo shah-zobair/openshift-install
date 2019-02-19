@@ -7,7 +7,7 @@
     - name: Get Docker Device Info
       set_fact:
         docker_device: "{{ hostvars[item]['container_runtime_docker_storage_setup_device'] }}"
-      with_items: "{{ groups['nodes'] }}"
+      with_items: "{{ groups['new_nodes'] }}"
 
     - debug: msg="{{ docker_device }}"
 
@@ -17,10 +17,9 @@
 
     - debug: msg="{{ docker_disk }}"
 
-    - name: get device name
+    - name: get Host device Info
       set_fact:
         device_name: "{{ item.key }}"
-      no_log: True
       with_dict: "{{ ansible_devices }}"
       changed_when: false
 
@@ -38,7 +37,6 @@
     - name: get lvm name
       set_fact:
         device_name: "{{ item.key }}"
-      no_log: True
       with_dict: "{{ ansible_lvm }}"
       changed_when: false
 
@@ -75,13 +73,13 @@
       fail:
       when: ansible_fqdn != dnslookup_fqdn.stdout
 
-- name: Check /var/lib/etcd partition exists
-  command: mountpoint -q {{volume_var_lib_etcd}}
+- name: Check /var/lib/origin partition exists
+  command: mountpoint -q {{volume_var_lib_origin}}
   register: volume_stat
   failed_when: False
   changed_when: False
 
-- name: Fail if /var/log/etcd is not mounted
+- name: Fail if /var/log/origin is not mounted
   fail:
   when: volume_stat.rc != 0
 
@@ -132,6 +130,6 @@
 
 - name: Mark that this playbook ran
   copy:
-    dest: "/root/master-preparation.stat"
+    dest: "/root/host-preparation.stat"
     content: |
       1

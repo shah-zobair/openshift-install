@@ -1,0 +1,17 @@
+---
+
+- import_playbook: new-host-preparation.yml
+
+- name: Prepare docker storage
+  hosts: new_nodes
+  roles:
+    - setup-docker-storage
+
+- name: Run Node Scale Up playbook
+  import_playbook: /usr/share/ansible/openshift-ansible/playbooks/openshift-node/scaleup.yml
+
+#- name: Run OpenShift Applier for Post Install tasks
+#  hosts: seed-hosts[0]
+#  roles:
+#    - openshift-applier
+

@@ -4,10 +4,22 @@
 
 - name: Check disk for Docker
   block:
-    - name: get device name
+    - name: Get Docker Device Info
+      set_fact:
+        docker_device: "{{ hostvars[item]['container_runtime_docker_storage_setup_device'] }}"
+      with_items: "{{ groups['nodes'] }}"
+
+    - debug: msg="{{ docker_device }}"
+
+    - name: Get Docker Disk Info
+      set_fact:
+        docker_disk: "{{ docker_device |replace(\"/dev/\",\"\") }}"
+
+    - debug: msg="{{ docker_disk }}"
+
+    - name: get Host device Info
       set_fact:
         device_name: "{{ item.key }}"
-      no_log: True
       with_dict: "{{ ansible_devices }}"
       changed_when: false
 
@@ -25,7 +37,6 @@
     - name: get lvm name
       set_fact:
         device_name: "{{ item.key }}"
-      no_log: True
       with_dict: "{{ ansible_lvm }}"
       changed_when: false
 
@@ -110,7 +121,7 @@
 
     - name: Copy Artifactory Certificates
       synchronize:
-        src: {{ artifactory_cert_path }}
+        src: "{{ artifactory_cert_path }}"
         dest: /etc/pki/ca-trust/source/anchors/
         use_ssh_args: yes
     - name: Update CA Trust

@@ -1,10 +1,10 @@
 ---
 
 - name: Host Preparation
-  hosts: nodes:!masters
+  hosts: new_nodes
   vars:
     volume_var_lib_origin: /var/lib/origin
     volume_var_log: /var/log
   roles:
-     - host-preparation
+     - new-host-preparation
 

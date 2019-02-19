@@ -2,6 +2,11 @@
 
 - name: Master Preparation
   hosts: masters
+  vars:
+    volume_var_lib_etcd: /var/lib/etcd
+    volume_var_log: /var/log
+    #docker_disk: sdc
+    #docker_device: /dev/{{ disk }}
   roles:
-     - host-preparation
+     - master-preparation
 
