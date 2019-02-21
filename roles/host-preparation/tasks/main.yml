@@ -65,7 +65,7 @@
       when: ansible_default_ipv4.address != dnslookup_ip.stdout
 
     - name: Do dns reverse lookup for local IP
-      shell: "nslookup {{ ansible_default_ipv4.address }} | grep name | awk {' print $4'} | sed s/.$//g"
+      shell: "nslookup {{ ansible_default_ipv4.address }} | grep 'name = ' | awk {' print $4'} | sed s/.$//g"
       register: dnslookup_fqdn
       changed_when: false
 
@@ -95,7 +95,7 @@
 
 - name: 'Ensure that total space on {{ volume_var_log }} is grater than 20GB'
   assert:
-    that: item.size_total >= 20 * 1024 * 1024 * 1024
+    that: item.size_total >= 19 * 1024 * 1024 * 1024
     msg: 'disk space has reached 70% thresold'
   when: item.mount == volume_var_log
   with_items: '{{ ansible_mounts }}'
