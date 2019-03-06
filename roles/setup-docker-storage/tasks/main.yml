@@ -21,6 +21,10 @@
 
     - debug: msg="{{ docker_disk }}"
 
+    - name: Inspect docker device
+      shell: echo "{{ docker_device }}" | grep -Eo '[0-9]{1}'
+      register: docker_disk_number
+
     
 - name: Configure Docker Storage
   block:
@@ -44,6 +48,29 @@
           CONTAINER_ROOT_LV_SIZE="100%FREE"
           CONTAINER_ROOT_LV_MOUNT_PATH="/var/lib/docker"
           EXTRA_STORAGE_OPTIONS="--storage-opt overlay2.override_kernel_check=true --storage-opt overlay2.size=40G --graph=/var/lib/docker"
+      when: "'' in docker_disk_number.stdout"
+
+    - name: Create PVS and VG
+      lvg:
+        vg: docker_vg
+        pvs: {{ docker_device }}
+        pesize: 8
+      when: "'' not in docker_disk_number.stdout"
+
+    - name: Prepare /etc/sysconfig/docker-storage-setup
+      blockinfile:
+        path: /etc/sysconfig/docker-storage-setup
+        block: |
+          #DEVS="{{ docker_device }}"
+          VG=docker_vg
+          DATA_SIZE=99%VG
+          STORAGE_DRIVER="overlay2"
+          CONTAINER_ROOT_LV_NAME="docker-root-lv"
+          CONTAINER_ROOT_LV_SIZE="100%FREE"
+          CONTAINER_ROOT_LV_MOUNT_PATH="/var/lib/docker"
+          EXTRA_STORAGE_OPTIONS="--storage-opt overlay2.override_kernel_check=true --storage-opt overlay2.size=40G --graph=/var/lib/docker"
+      when: "'' not in docker_disk_number.stdout"
+
 
     - name: Stop docker service
       service:

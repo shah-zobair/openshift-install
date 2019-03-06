@@ -1,0 +1,7 @@
+---
+
+- name: Prepare docker storage
+  hosts: new_nodes
+  roles:
+    - setup-docker-storage
+
