@@ -24,6 +24,7 @@
     - name: Inspect docker device
       shell: echo "{{ docker_device }}" | grep -Eo '[0-9]{1}'
       register: docker_disk_number
+      changed_when: false
 
     
 - name: Configure Docker Storage
@@ -35,6 +36,9 @@
       vars:
         packages:
         - docker-1.13*
+
+    - name: Empty /etc/sysconfig/docker-storage-setup file
+      shell: echo /dev/null > /etc/sysconfig/docker-storage-setup
 
     - name: Prepare /etc/sysconfig/docker-storage-setup
       blockinfile:
@@ -48,14 +52,14 @@
           CONTAINER_ROOT_LV_SIZE="100%FREE"
           CONTAINER_ROOT_LV_MOUNT_PATH="/var/lib/docker"
           EXTRA_STORAGE_OPTIONS="--storage-opt overlay2.override_kernel_check=true --storage-opt overlay2.size=40G --graph=/var/lib/docker"
-      when: "'' in docker_disk_number.stdout"
+      when: docker_disk_number.stdout == ""
 
     - name: Create PVS and VG
       lvg:
         vg: docker_vg
-        pvs: {{ docker_device }}
+        pvs: "{{ docker_device }}"
         pesize: 8
-      when: "'' not in docker_disk_number.stdout"
+      when: docker_disk_number.stdout != ""
 
     - name: Prepare /etc/sysconfig/docker-storage-setup
       blockinfile:
@@ -69,7 +73,7 @@
           CONTAINER_ROOT_LV_SIZE="100%FREE"
           CONTAINER_ROOT_LV_MOUNT_PATH="/var/lib/docker"
           EXTRA_STORAGE_OPTIONS="--storage-opt overlay2.override_kernel_check=true --storage-opt overlay2.size=40G --graph=/var/lib/docker"
-      when: "'' not in docker_disk_number.stdout"
+      when: docker_disk_number.stdout != ""
 
 
     - name: Stop docker service
