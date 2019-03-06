@@ -93,10 +93,18 @@
   fail:
   when: volume_stat.rc != 0
 
+- name: Increase var-log LV if needed
+  lvol:
+    vg: {{ root_vg_name }}
+    lv: {{ var_log_lv }}
+    size: 20g
+    shrink: no
+    resizefs: yes
+
 - name: 'Ensure that total space on {{ volume_var_log }} is grater than 20GB'
   assert:
     that: item.size_total >= 19 * 1024 * 1024 * 1024
-    msg: 'disk space has reached 70% thresold'
+    msg: '/var/log must be 20GB or more'
   when: item.mount == volume_var_log
   with_items: '{{ ansible_mounts }}'
 
@@ -107,15 +115,36 @@
         policy: targeted
         state: enforcing
 
-    - name: Extend varloglv LV to 20GB
-      lvol:
-        vg: rootvg
-        lv: varloglv
-        size: 20g
-        shrink: no
+#    - name: Extend varloglv LV to 20GB
+#      lvol:
+#        vg: rootvg
+#        lv: varloglv
+#        size: 20g
+#        shrink: no
+#         resizefs: yes
 
     - name: Set ipv4.ip_forward to 1
       shell: "sed -i 's/net.ipv4.ip_forward = 0/net.ipv4.ip_forward = 1/g' /etc/sysctl.conf; sysctl -p"
+      register: sysctl
+    - debug: var=sysctl.stdout_lines
+
+    - name: Set net.ipv6.conf.all.accept_ra = 0
+      shell: "sed -i 's/net.ipv6.conf.all.accept_ra = 1/net.ipv6.conf.all.accept_ra = 0/g' /etc/sysctl.conf"
+
+    - name: Set net.ipv6.conf.default.accept_ra = 0
+      shell: "sed -i 's/net.ipv6.conf.default.accept_ra = 1/net.ipv6.conf.default.accept_ra = 0/g' /etc/sysctl.conf"
+
+    - name: Set net.ipv6.conf.all.accept_redirects = 0
+      shell: "sed -i 's/net.ipv6.conf.all.accept_redirects = 1/net.ipv6.conf.all.accept_redirects = 0/g' /etc/sysctl.conf"
+
+    - name: Set net.ipv6.conf.default.accept_redirects = 0
+      shell: "sed -i 's/net.ipv6.conf.default.accept_redirects = 1/net.ipv6.conf.default.accept_redirects = 0/g' /etc/sysctl.conf"
+
+    - name: Set net.ipv6.conf.all.disable_ipv6 = 1
+      shell: "sed -i 's/net.ipv6.conf.all.disable_ipv6 = 0/net.ipv6.conf.all.disable_ipv6 = 1/g' /etc/sysctl.conf"
+
+    - name: Apply all sysctl changes
+      shell: "sysctl -p"
       register: sysctl
     - debug: var=sysctl.stdout_lines
 
