@@ -17,6 +17,11 @@
 
     - debug: msg="{{ docker_disk }}"
 
+    - name: Inspect docker device
+      shell: echo "{{ docker_device }}" | grep -Eo '[0-9]{1}'
+      register: docker_disk_number
+      changed_when: false
+
     - name: get Host device Info
       set_fact:
         device_name: "{{ item.key }}"
@@ -25,14 +30,19 @@
 
     - name: show all values for selected device name
       debug: var=ansible_devices["{{ docker_disk }}"]["partitions"]
+      when: docker_disk_number.stdout == ""
 
     - name: Fail if Disk is not available
       fail:
-      when: ansible_devices[docker_disk] is not defined
+      when:
+        - ansible_devices[docker_disk] is not defined
+        - docker_disk_number.stdout == ""
 
     - name: Fail if Disk is Partitioned
       fail:
-      when: ansible_devices[docker_disk]["partitions"] | length != 0
+      when:
+        - ansible_devices[docker_disk]["partitions"] | length != 0
+        - docker_disk_number.stdout == ""
 
     - name: get lvm name
       set_fact:
@@ -42,11 +52,14 @@
 
     - name: show all values for selected pv name
       debug: var=ansible_lvm["pvs"]["{{ docker_device }}"]
+      when: docker_disk_number.stdout == ""
 
 
     - name: Fail if "PVS" is configured
       fail:
-      when: ansible_lvm["pvs"][docker_device] is defined
+      when:
+        - ansible_lvm["pvs"][docker_device] is defined
+        - docker_disk_number.stdout == ""
 
 
 - name: Check FQDN and DNS forward/reverse resolve
