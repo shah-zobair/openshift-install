@@ -13,7 +13,7 @@
 
     - name: Get Docker Disk Info
       set_fact:
-        docker_disk: "{{ docker_device |replace(\"/dev/\",\"\") }}"
+        docker_disk: "{{ docker_device |replace(\"/dev/\",\"\") |regex_replace('[0-9]$','') }}"
 
     - debug: msg="{{ docker_disk }}"
 
