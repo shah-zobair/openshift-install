@@ -108,8 +108,8 @@
 
 - name: Increase var-log LV if needed
   lvol:
-    vg: {{ root_vg_name }}
-    lv: {{ var_log_lv }}
+    vg: "{{ root_vg_name }}"
+    lv: "{{ var_log_lv }}"
     size: 20g
     shrink: no
     resizefs: yes
