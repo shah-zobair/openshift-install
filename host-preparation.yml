@@ -1,5 +1,10 @@
 ---
 
+- name: Prepare docker storage
+  hosts: nodes:!masters
+  roles:
+    - setup-docker-storage
+
 - name: Host Preparation
   hosts: nodes:!masters
   vars:

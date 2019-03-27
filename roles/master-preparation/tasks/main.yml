@@ -31,9 +31,9 @@
       fail:
       when: ansible_devices[docker_disk] is not defined
 
-    - name: Fail if Disk is Partitioned
-      fail:
-      when: ansible_devices[docker_disk]["partitions"] | length != 0
+#    - name: Fail if Disk is Partitioned
+#      fail:
+#      when: ansible_devices[docker_disk]["partitions"] | length != 0
 
     - name: get lvm name
       set_fact:
@@ -46,9 +46,9 @@
       debug: var=ansible_lvm["pvs"]["{{ docker_device }}"]
 
 
-    - name: Fail if "PVS" is configured
-      fail:
-      when: ansible_lvm["pvs"][docker_device] is defined
+#    - name: Fail if "PVS" is configured
+#      fail:
+#      when: ansible_lvm["pvs"][docker_device] is defined
 
 
 - name: Check FQDN and DNS forward/reverse resolve
@@ -85,7 +85,7 @@
   fail:
   when: volume_stat.rc != 0
 
-- name: Check /var/log size for 20GB or more
+- name: Check /var/log is mounted
   command: mountpoint -q {{volume_var_log}}
   register: volume_stat
   failed_when: False
@@ -95,10 +95,18 @@
   fail:
   when: volume_stat.rc != 0
 
+- name: Increase var-log LV if needed
+  lvol:
+    vg: {{ root_vg_name }}
+    lv: {{ var_log_lv }}
+    size: 20g
+    shrink: no
+    resizefs: yes
+
 - name: 'Ensure that total space on {{ volume_var_log }} is grater than 20GB'
   assert:
-    that: item.size_total >= 20 * 1024 * 1024 * 1024
-    msg: 'disk space has reached 70% thresold'
+    that: item.size_total >= 19 * 1024 * 1024 * 1024
+    msg: '/var/log must be 20GB or more'
   when: item.mount == volume_var_log
   with_items: '{{ ansible_mounts }}'
 
@@ -117,7 +125,25 @@
         shrink: no
 
     - name: Set ipv4.ip_forward to 1
-      shell: "sed -i 's/net.ipv4.ip_forward = 0/net.ipv4.ip_forward = 1/g' /etc/sysctl.conf; sysctl -p"
+      shell: "sed -i 's/net.ipv4.ip_forward = 0/net.ipv4.ip_forward = 1/g' /etc/sysctl.conf"
+
+    - name: Set net.ipv6.conf.all.accept_ra = 0
+      shell: "sed -i 's/net.ipv6.conf.all.accept_ra = 1/net.ipv6.conf.all.accept_ra = 0/g' /etc/sysctl.conf"
+
+    - name: Set net.ipv6.conf.default.accept_ra = 0
+      shell: "sed -i 's/net.ipv6.conf.default.accept_ra = 1/net.ipv6.conf.default.accept_ra = 0/g' /etc/sysctl.conf"
+
+    - name: Set net.ipv6.conf.all.accept_redirects = 0
+      shell: "sed -i 's/net.ipv6.conf.all.accept_redirects = 1/net.ipv6.conf.all.accept_redirects = 0/g' /etc/sysctl.conf"
+
+    - name: Set net.ipv6.conf.default.accept_redirects = 0
+      shell: "sed -i 's/net.ipv6.conf.default.accept_redirects = 1/net.ipv6.conf.default.accept_redirects = 0/g' /etc/sysctl.conf"
+
+    - name: Set net.ipv6.conf.all.disable_ipv6 = 1
+      shell: "sed -i 's/net.ipv6.conf.all.disable_ipv6 = 0/net.ipv6.conf.all.disable_ipv6 = 1/g' /etc/sysctl.conf"
+
+    - name: Apply all sysctl changes
+      shell: "sysctl -p"
       register: sysctl
     - debug: var=sysctl.stdout_lines
 

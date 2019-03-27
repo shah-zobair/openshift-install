@@ -2,3 +2,8 @@
 - hosts: seed-hosts[0]
   roles:
     - openshift-applier
+
+#- name: Post Installation
+#  hosts: masters[0]
+#  roles:
+#    - post-install
