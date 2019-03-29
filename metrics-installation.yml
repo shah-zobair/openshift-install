@@ -1,0 +1,31 @@
+---
+
+- name: Change Default Storage Selector to Block Storage
+  hosts: masters[0]
+  tasks:
+    - name: Set Default Storage Selector to False for File Storage
+      shell: "export KUBECONFIG=/etc/origin/master/admin.kubeconfig; oc login -u system:admin >/dev/null; oc patch storageclass glusterfs-storage -p '{\"metadata\": {\"annotations\": {"storageclass.kubernetes.io/is-default-class": \"false\"}}}'"
+      register: oc_output
+    - debug: var=oc_output.stdout_lines
+
+    - name: Set Default Storage Selector to Block Storage
+      shell: "export KUBECONFIG=/etc/origin/master/admin.kubeconfig; oc login -u system:admin >/dev/null; oc patch storageclass glusterfs-storage-block -p '{\"metadata\": {\"annotations\": {"storageclass.kubernetes.io/is-default-class": \"true\"}}}'"
+      register: oc_output
+    - debug: var=oc_output.stdout_lines
+
+
+- import_playbook: /usr/share/ansible/playbooks/openshift-metrics/config.yml openshift_metrics_install_metrics='True'
+
+
+- name: Change Back Default Storage Selector to File Storage
+  hosts: masters[0]
+  tasks:
+    - name: Set Default Storage Selector to False for Block Storage
+      shell: "export KUBECONFIG=/etc/origin/master/admin.kubeconfig; oc login -u system:admin >/dev/null; oc patch storageclass glusterfs-storage-block -p '{\"metadata\": {\"annotations\": {"storageclass.kubernetes.io/is-default-class": \"false\"}}}'"
+      register: oc_output
+    - debug: var=oc_output.stdout_lines
+
+    - name: Set Default Storage Selector to File Storage
+      shell: "export KUBECONFIG=/etc/origin/master/admin.kubeconfig; oc login -u system:admin >/dev/null; oc patch storageclass glusterfs-storage -p '{\"metadata\": {\"annotations\": {"storageclass.kubernetes.io/is-default-class": \"true\"}}}'"
+      register: oc_output
+    - debug: var=oc_output.stdout_lines

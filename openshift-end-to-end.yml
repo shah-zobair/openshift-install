@@ -4,7 +4,7 @@
   roles:
     - setup-bastion
 
-
+# Note: Set bmo_run_prerequisite to 'True' for the initial cluster installation. Do NOT run the playbook for the subsequent run as it is not idemponent.
 - import_playbook: host-preparation.yml
   when: bmo_run_prerequisite
 
@@ -15,7 +15,11 @@
   import_playbook: /usr/share/ansible/openshift-ansible/playbooks/prerequisites.yml
   when: bmo_run_prerequisite
 
-- import_playbook: /usr/share/ansible/openshift-ansible/playbooks/deploy_cluster.yml
+- import_playbook: /usr/share/ansible/openshift-ansible/playbooks/deploy_cluster.yml openshift_metrics_install_metrics='False'
+
+# Note: Run openshift-metrics playbook only during first installation. It needs to be installed after deploying OCS by the deploy_cluster playbook above.
+- import_playbook: metrics-installation.yml
+  when: bmo_run_prerequisite
 
 - name: Run OpenShift Applier for Post Install tasks
   hosts: seed-hosts[0]
