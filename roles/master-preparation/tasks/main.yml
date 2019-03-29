@@ -99,14 +99,14 @@
   lvol:
     vg: {{ root_vg_name }}
     lv: {{ var_log_lv }}
-    size: 20g
+    size: 40g
     shrink: no
     resizefs: yes
 
-- name: 'Ensure that total space on {{ volume_var_log }} is grater than 20GB'
+- name: 'Ensure that total space on {{ volume_var_log }} is grater than 40GB'
   assert:
-    that: item.size_total >= 19 * 1024 * 1024 * 1024
-    msg: '/var/log must be 20GB or more'
+    that: item.size_total >= 39 * 1024 * 1024 * 1024
+    msg: '/var/log must be 40GB or more'
   when: item.mount == volume_var_log
   with_items: '{{ ansible_mounts }}'
 
@@ -116,13 +116,6 @@
       selinux:
         policy: targeted
         state: enforcing
-
-    - name: Extend varloglv LV to 20GB
-      lvol:
-        vg: rootvg
-        lv: varloglv
-        size: 20g
-        shrink: no
 
     - name: Set ipv4.ip_forward to 1
       shell: "sed -i 's/net.ipv4.ip_forward = 0/net.ipv4.ip_forward = 1/g' /etc/sysctl.conf"
