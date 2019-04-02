@@ -14,7 +14,7 @@
     - debug: var=oc_output.stdout_lines
 
 
-- import_playbook: /usr/share/ansible/playbooks/openshift-metrics/config.yml openshift_metrics_install_metrics='True'
+- import_playbook: /usr/share/ansible/openshift-ansible/playbooks/openshift-metrics/config.yml openshift_metrics_install_metrics='True'
 
 
 - name: Change Back Default Storage Selector to File Storage

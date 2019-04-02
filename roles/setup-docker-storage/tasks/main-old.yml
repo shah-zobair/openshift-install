@@ -10,9 +10,8 @@
   block:
     - name: Get Docker Device Info
       set_fact:
-        docker_device: "{{ container_runtime_docker_storage_setup_device }}"
-        #docker_device: "{{ hostvars[item]['container_runtime_docker_storage_setup_device'] }}"
-      #with_items: "{{ansible_play_hosts}}"
+        docker_device: "{{ hostvars[item]['container_runtime_docker_storage_setup_device'] }}"
+      with_items: "{{ansible_play_hosts}}"
 
     - debug: msg="{{ docker_device }}"
 
@@ -26,11 +25,10 @@
       shell: echo "{{ docker_device }}" | grep -Eo '[0-9]{1}'
       register: docker_disk_number
       changed_when: false
-      ignore_errors: true
 
     
-#- name: Configure Docker Storage
-#  block:
+- name: Configure Docker Storage
+  block:
     - name: Install docker
       yum:
         name: "{{ packages }}"
