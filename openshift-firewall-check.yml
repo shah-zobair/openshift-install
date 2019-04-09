@@ -1,0 +1,156 @@
+---
+  
+- name: Istall nc package
+  hosts: nodes
+  gather_facts: no
+  tasks:
+    - name: Install nc package
+      yum:
+        name: nc
+        state: latest
+
+
+- name: Enable Port TCP/443 on Masters
+  hosts: masters
+  gather_facts: no
+  vars:
+    PORT: 443
+  tasks:
+    - name: Check TCP/443 is already listening or not
+      shell: netstat -tunlp | grep ":{{ PORT }} " | grep "tcp " | awk {' print $7 '} | sed -e 's/.*\///' -e 's/ //'
+      failed_when: False
+      changed_when: false
+      register: port_check
+    - debug: var=port_check
+
+    - name: Start TCP/443 if it's not listening
+      shell: "( ( nohup nc -l {{ PORT }} -k >/dev/null 2>&1 ) & )"
+      when: port_check.stdout == ""
+
+
+- name: Enable Port UDP/4789 on all Nodes
+  hosts: nodes
+  gather_facts: no
+  vars:
+    PORT: 4789
+    port_type: "udp"
+  tasks:
+    - name: Check "{{ port_type }}" "{{ PORT }}" is already listening or not
+      shell: netstat -a -p | grep "udp " | grep {{ PORT }} | awk {' print $6 '}| sed -e 's/.*\///'
+      failed_when: False
+      changed_when: false
+      register: port_check
+      when: port_type == "udp"
+
+    - debug: var=port_check
+
+    - name: Prepare UDP python script
+      blockinfile:
+        path: /tmp/port-listner-udp-4789.py
+        create: yes
+        mode: 0755
+        block: |
+          import socket
+          UDP_IP = ""
+          UDP_PORT = {{ PORT }}
+          sock = socket.socket(socket.AF_INET, # Internet
+                               socket.SOCK_DGRAM) # UDP
+          sock.bind((UDP_IP, UDP_PORT))
+          while True:
+            data, addr = sock.recvfrom(1024) # buffer size is 1024 bytes
+            print "received message:", data
+      when: port_type == "udp"
+
+
+    - name: Start "{{ port_type }}" "{{ PORT }}" if it's not listening
+      shell: nohup python /tmp/port-listner-udp.py >/dev/null 2>&1 &
+      register: output
+      when:
+        - port_check.stdout == ""
+        - port_type == "udp"
+    - debug: var=output
+
+
+- name: Enable Port TCP/10250 on all Nodes
+  hosts: nodes
+  gather_facts: no
+  vars:
+    PORT: 10250
+  tasks:
+    - name: Check TCP/10250 is already listening or not
+      shell: netstat -tunlp | grep ":{{ PORT }} " | grep "tcp " | awk {' print $7 '} | sed -e 's/.*\///' -e 's/ //'
+      failed_when: False
+      changed_when: false
+      register: port_check
+    - debug: var=port_check
+
+    - name: Start TCP/10250 if it's not listening
+      shell: "( ( nohup nc -l {{ PORT }} -k >/dev/null 2>&1 ) & )"
+      when: port_check.stdout == ""
+
+
+- name: Test port TCP/443 from all Nodes to Master LB
+  hosts: nodes
+  gather_facts: no
+  vars:
+    PORT: 443
+    port_type: "tcp"
+  tasks:
+    - name: Check port "{{ port_type }}" "{{ PORT }}" from all Nodes to Master LB
+      shell: echo -n "foo" | nc -4 -w1 {{ openshift_master_cluster_hostname }} {{ PORT }}
+      changed_when: false
+      when: port_type == "tcp"
+
+
+- name: Test port UDP/4789 from all Nodes to all Master Nodes
+  hosts: nodes
+  gather_facts: yes
+  vars:
+    PORT: 4789
+    port_type: "udp"
+  tasks:
+    - name: Check port "{{ port_type }}" "{{ PORT }}" from all Nodes to  "{{ groups['masters'][0] }}"
+      shell: echo -n "foo" | nc -4 -u -w1 {{ groups['masters'][0] }} {{ PORT }}
+      changed_when: false
+      register: output
+      when: port_type == "udp"
+    - debug: var=output
+
+    - name: Check port "{{ port_type }}" "{{ PORT }}" from all Nodes to  "{{ groups['masters'][-2] }}"
+      shell: echo -n "foo" | nc -4 -u -w1 {{ groups['masters'][-2] }} {{ PORT }}
+      changed_when: false
+      register: output
+      when: port_type == "udp"
+    - debug: var=output
+
+    - name: Check port "{{ port_type }}" "{{ PORT }}" from all Nodes to  "{{ groups['masters'][-1] }}"
+      shell: echo -n "foo" | nc -4 -u -w1 {{ groups['masters'][-1] }} {{ PORT }}
+      changed_when: false
+      register: output
+      when: port_type == "udp"
+    - debug: var=output
+
+
+- name: Test port UDP/10250 from all Masters to all Nodes
+  hosts: masters
+  gather_facts: yes
+  vars:
+    PORT: 10250
+    port_type: "tcp"
+  tasks:
+    - name: Check port "{{ port_type }}" "{{ PORT }}" from all Masters to all nodes
+      shell: echo -n "foo" | nc -4 -w1 {{ item }} {{ PORT }}
+      with_items: "{{ groups['nodes'] }}"
+      changed_when: false
+      when: port_type == "tcp"
+
+
+- name: Stop all ports that were opened by this playbook
+  hosts: nodes
+  gather_facts: no
+  tasks:
+    - name: Stop NC process
+      shell: pkill nc
+
+    - name: Stop python process for port 4789
+      shell: pkill -f /tmp/port-listner-udp-4789.py
