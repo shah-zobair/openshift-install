@@ -56,7 +56,7 @@
       when: ansible_hostname == ansible_fqdn
 
     - name: Do dns lookup for fqdn
-      shell: "nslookup {{ ansible_fqdn }} | grep -v 53 | grep Address: | awk {'print $2'}"
+      shell: "nslookup {{ ansible_fqdn }} | grep -v '#53' | grep Address: | awk {'print $2'}"
       register: dnslookup_ip
       changed_when: false
 
